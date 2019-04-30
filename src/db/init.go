@@ -34,7 +34,6 @@ func GetDB(ctx context.Context, database string) (*mongo.Database, error) {
 
 //ReadAll reads all the documents from a collection
 func ReadAll(ctx context.Context, collection *mongo.Collection) ([]primitive.M, error) {
-	//collection := db.Collection(coll)
 	cursor, err := collection.Find(ctx, bson.D{})
 	defer cursor.Close(ctx)
 	if err != nil {

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"context"
 	"log"
 	"encoding/json"
@@ -8,21 +9,11 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/skdeep12/jarvis/config"
-	"github.com/skdeep12/jarvis/db"
-	"github.com/skdeep12/jarvis/handlers"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"github.com/skdeep12/jarvis/handlers"
 )
 
-func configDB() (*mongo.Database, error){
-	ctx := context.Background()
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
-	ctx = context.WithValue(ctx, config.ProtoKey, config.MongoPort)
-	ctx = context.WithValue(ctx, config.IPKey, config.MongoIP)
-	ctx = context.WithValue(ctx, config.PortKey, config.MongoPort)
-	return db.GetDB(ctx, "finance")
-}
 
 func some(c echo.Context) error {
 	// var info map[string]string
@@ -47,19 +38,43 @@ func some(c echo.Context) error {
 }
 
 func main() {
+	ctx := context.Background()
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 
-	// db, err := configDB()
-	// if err != nil {
-	// 	log.Fatal("Failure")
-	// }
+	ctx = context.WithValue(ctx, config.ProtoKey, config.MongoProto)
+	ctx = context.WithValue(ctx, config.IPKey, config.MongoIP)
+	ctx = context.WithValue(ctx, config.PortKey, config.MongoPort)
+
+	uri := fmt.Sprintf(`%s://%s:%s`,
+		ctx.Value(config.ProtoKey).(string),
+		ctx.Value(config.IPKey).(string),
+		ctx.Value(config.PortKey).(string),
+	)
+	client, err := mongo.NewClient(options.Client().ApplyURI(uri))
+	if err != nil {
+	  fmt.Errorf("todo: couldn't connect to mongo: %v", err)
+	 	return
+	}
+	err = client.Connect(ctx)
+	defer client.Disconnect(ctx)
+	if err != nil {
+		fmt.Errorf("todo: mongo client couldn't connect with background context: %v", err)
+		return
+	}
+	if err != nil {
+		log.Println(err)
+		log.Fatal("Failure")
+	}
 	//insertAll(ctx, db)
 	e := echo.New()
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 	//mux := http.NewServeMux()
 	//e.GET("/", hello)
-	//e.GET("/_/companies", handlers.GetAllCompanies(ctx, db, "listOfScrips"))
-	e.GET("/company/:securityCode",handlers.TestHandler())
+	ctx = context.WithValue(ctx, "client", client)
+	e.GET("/_/companies", handlers.GetAllCompanies(ctx, "finance", "listOfScrips"))
+	e.GET("/company/:securityCode",handlers.GetBasicInfo(ctx,"finance", "basicRatios"))
 	for _,r := range e.Routes() {
 		log.Println(r)
 	}

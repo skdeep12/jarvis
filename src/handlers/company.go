@@ -13,9 +13,9 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func GetAllCompanies(ctx context.Context, database *mongo.Database, coll string) echo.HandlerFunc {
+func GetAllCompanies(ctx context.Context, database, coll string) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		collection := database.Collection(coll)
+		collection := ctx.Value("client").(*mongo.Client).Database(database).Collection(coll)
 		docs, err := db.ReadAll(ctx, collection)
 		if err != nil {
 			log.Println(err)
@@ -34,13 +34,14 @@ func GetAllCompanies(ctx context.Context, database *mongo.Database, coll string)
 		return c.JSON(http.StatusOK, companies)
 	}
 }
-func GetBasicInfo(ctx context.Context, database *mongo.Database) echo.HandlerFunc {
+
+func GetBasicInfo(ctx context.Context, database, coll string) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		securityCode := c.Param("securityCode")
 		logger.Debug.Println("request for " + securityCode)
-		collection := database.Collection("basicRatios")
+		collection := ctx.Value("client").(*mongo.Client).Database(database).Collection(coll)
 		logger.Debug.Println("Reachd to basic ratios router.")
-		info, err := db.GetOne(ctx, collection, bson.D{{"Security Code", "500"}})
+		info, err := db.GetOne(ctx, collection, bson.D{{Key: "Security Code", Value: securityCode}})
 		if err != nil {
 			//logger.Info.Println("Error in getting company basic info for " + securityCode)
 			return c.JSON(http.StatusNotFound, err)
@@ -49,12 +50,15 @@ func GetBasicInfo(ctx context.Context, database *mongo.Database) echo.HandlerFun
 			logger.Debug.Println("No record found.")
 			return c.JSON(http.StatusNotFound, "")
 		}
-
-
+		// basicInfo := models.BasicRatiosCompany{
+		// 	PE:  info["P/E"].(string),
+		// 	EPS: info["EPS"].(string),
+		// 	RoE: info["RoE"].(string),
+		// }
 		basicInfo := models.BasicRatiosCompany{
-			PE:  info["P/E"].(string),
-			EPS: info["EPS"].(string),
-			RoE: info["RoE"].(string),
+			PE:  "1",
+			EPS: "1",
+			RoE: "1",
 		}
 		c.Response().Header().Add("Access-Control-Allow-Origin", "*")
 		return c.JSON(http.StatusOK, basicInfo)
