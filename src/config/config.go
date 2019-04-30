@@ -4,7 +4,7 @@ package config
 var MongoPort = "27017"
 
 //MongoIP server ip fror mongo server
-var MongoIP = "192.168.0.108"
+var MongoIP = "127.0.0.1"
 
 //MongoProto protocol to use to connect to mongo
 var MongoProto = "mongodb"

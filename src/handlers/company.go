@@ -14,9 +14,9 @@ import (
 )
 //GetAllCompanies returns a Handler function for echo package
 //which returns all companes from a collection. 
-func GetAllCompanies(ctx context.Context, database *mongo.Database, coll string) echo.HandlerFunc {
+func GetAllCompanies(ctx context.Context, database, coll string) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		collection := database.Collection(coll)
+		collection := ctx.Value("client").(*mongo.Client).Database(database).Collection(coll)
 		docs, err := db.ReadAll(ctx, collection)
 		if err != nil {
 			log.Println(err)
@@ -38,11 +38,11 @@ func GetAllCompanies(ctx context.Context, database *mongo.Database, coll string)
 /*GetBasicInfo returns handler function for echo, which returns basic info about a company.
 Handler expects a parameter in the url, which is a security code for that company.
 */
-func GetBasicInfo(ctx context.Context, database *mongo.Database) echo.HandlerFunc {
+func GetBasicInfo(ctx context.Context, database, coll string) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		securityCode := c.Param("securityCode")
 		logger.Debug.Println("request for " + securityCode)
-		collection := database.Collection("basicRatios")
+		collection := ctx.Value("client").(*mongo.Client).Database(database).Collection(coll)
 		logger.Debug.Println("Reachd to basic ratios router.")
 		info, err := db.GetOne(ctx, collection, bson.D{{Key: "Security Code", Value: securityCode}})
 		if err != nil {
@@ -53,10 +53,15 @@ func GetBasicInfo(ctx context.Context, database *mongo.Database) echo.HandlerFun
 			logger.Debug.Println("No record found.")
 			return c.JSON(http.StatusNotFound, "")
 		}
+		// basicInfo := models.BasicRatiosCompany{
+		// 	PE:  info["P/E"].(string),
+		// 	EPS: info["EPS"].(string),
+		// 	RoE: info["RoE"].(string),
+		// }
 		basicInfo := models.BasicRatiosCompany{
-			PE:  info["P/E"].(string),
-			EPS: info["EPS"].(string),
-			RoE: info["RoE"].(string),
+			PE:  "1",
+			EPS: "1",
+			RoE: "1",
 		}
 		c.Response().Header().Add("Access-Control-Allow-Origin", "*")
 		return c.JSON(http.StatusOK, basicInfo)
