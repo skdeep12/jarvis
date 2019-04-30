@@ -75,6 +75,7 @@ func main() {
 	ctx = context.WithValue(ctx, "client", client)
 	e.GET("/_/companies", handlers.GetAllCompanies(ctx, "finance", "listOfScrips"))
 	e.GET("/company/:securityCode",handlers.GetBasicInfo(ctx,"finance", "basicRatios"))
+	//e.GET("/company/:securityCode",handlers.TestHandler())
 	for _,r := range e.Routes() {
 		log.Println(r)
 	}
