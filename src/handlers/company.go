@@ -12,7 +12,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 )
-
+//GetAllCompanies returns a Handler function for echo package
+//which returns all companes from a collection. 
 func GetAllCompanies(ctx context.Context, database *mongo.Database, coll string) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		collection := database.Collection(coll)
@@ -34,13 +35,16 @@ func GetAllCompanies(ctx context.Context, database *mongo.Database, coll string)
 		return c.JSON(http.StatusOK, companies)
 	}
 }
+/*GetBasicInfo returns handler function for echo, which returns basic info about a company.
+Handler expects a parameter in the url, which is a security code for that company.
+*/
 func GetBasicInfo(ctx context.Context, database *mongo.Database) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		securityCode := c.Param("securityCode")
 		logger.Debug.Println("request for " + securityCode)
 		collection := database.Collection("basicRatios")
 		logger.Debug.Println("Reachd to basic ratios router.")
-		info, err := db.GetOne(ctx, collection, bson.D{{"Security Code", "500"}})
+		info, err := db.GetOne(ctx, collection, bson.D{{Key: "Security Code", Value: securityCode}})
 		if err != nil {
 			//logger.Info.Println("Error in getting company basic info for " + securityCode)
 			return c.JSON(http.StatusNotFound, err)
@@ -49,8 +53,6 @@ func GetBasicInfo(ctx context.Context, database *mongo.Database) echo.HandlerFun
 			logger.Debug.Println("No record found.")
 			return c.JSON(http.StatusNotFound, "")
 		}
-
-
 		basicInfo := models.BasicRatiosCompany{
 			PE:  info["P/E"].(string),
 			EPS: info["EPS"].(string),
@@ -76,8 +78,8 @@ func TestHandler() echo.HandlerFunc {
 		//c.Response().Header().Add("Access-Control-Allow-Origin", "*")
 		log.Println("param: " + c.Param("securityCode"))
 		type ColorGroup struct {
-			ID     int `json:"ID"`
-			Name   string `json:"Name"`
+			ID     int      `json:"ID"`
+			Name   string   `json:"Name"`
 			Colors []string `json:"Colors"`
 		}
 		_ = ColorGroup{
@@ -85,6 +87,6 @@ func TestHandler() echo.HandlerFunc {
 			Name:   "Reds",
 			Colors: []string{"Crimson", "Red", "Ruby", "Maroon"},
 		}
-		return c.JSON(200,basicInfo)
+		return c.JSON(200, basicInfo)
 	}
 }
